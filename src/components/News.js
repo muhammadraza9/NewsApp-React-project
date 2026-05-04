@@ -8,41 +8,40 @@ const News = (props) => {
 
   const [articles, setAritcles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  // ✅ ENV variable (must exist in .env)
   const API_KEY = process.env.REACT_APP_GNEWS_API_KEY;
 
   const capitalizeFirstletter = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
+  // ✅ FIRST LOAD
   const updateNews = async () => {
     try {
       setLoading(true);
 
-      console.log("API KEY:", API_KEY); // debug
-
-      // ✅ SIMPLE URL (no pagination)
-      let url = `https://gnews.io/api/v4/top-headlines?category=${props.category.toLowerCase()}&lang=en&country=${props.country}&max=${props.pageSize}&apikey=${API_KEY}`;
+      let url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=1&apikey=${API_KEY}`;
 
       let response = await fetch(url);
-      let parsedData = await response.json();
+      let data = await response.json();
 
-      console.log(parsedData); // debug
-
-      // ✅ handle API error
-      if (parsedData.errors) {
-        console.error("API Error:", parsedData.errors);
-        setAritcles([]);
+      if (data.articles && data.articles.length > 0) {
+        setAritcles(data.articles);
+        setPage(1);
+        setHasMore(true); // reset
       } else {
-        setAritcles(parsedData.articles || []);
+        setAritcles([]);
+        setHasMore(false);
       }
 
       setLoading(false);
 
     } catch (error) {
-      console.error("Fetch Error:", error);
+      console.error(error);
       setLoading(false);
+      setHasMore(false);
     }
   };
 
@@ -51,8 +50,33 @@ const News = (props) => {
     // eslint-disable-next-line
   }, [props.category]);
 
-  // ❌ disable infinite scroll (causes issues with free API)
-  const fetchMoreData = () => {};
+  // ✅ LOAD MORE ON SCROLL
+  const fetchMoreData = async () => {
+    try {
+      if (!hasMore) return;
+
+      const nextPage = page + 1;
+
+      let url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=${nextPage}&apikey=${API_KEY}`;
+
+      let response = await fetch(url);
+      let data = await response.json();
+
+      // ❌ No more news → stop forever
+      if (!data.articles || data.articles.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      // ✅ Append news
+      setAritcles(prev => prev.concat(data.articles));
+      setPage(nextPage);
+
+    } catch (error) {
+      console.error(error);
+      setHasMore(false);
+    }
+  };
 
   return (
     <>
@@ -62,7 +86,6 @@ const News = (props) => {
 
       {loading && <Spinner />}
 
-      {/* ✅ no news message */}
       {!loading && articles.length === 0 && (
         <h3 className="text-center">No news available 😔</h3>
       )}
@@ -70,7 +93,7 @@ const News = (props) => {
       <InfiniteScroll
         dataLength={articles.length}
         next={fetchMoreData}
-        hasMore={false}   // ❌ disabled
+        hasMore={hasMore}
         loader={<Spinner />}
       >
         <div className='container'>
@@ -95,6 +118,13 @@ const News = (props) => {
           </div>
         </div>
       </InfiniteScroll>
+
+      {/* ✅ Show once when finished */}
+      {!hasMore && articles.length > 0 && (
+        <h4 className="text-center my-4">
+          No more news for today ✅
+        </h4>
+      )}
     </>
   )
 }
