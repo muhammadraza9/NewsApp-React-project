@@ -11,9 +11,6 @@ const News = (props) => {
   const [page, setPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
 
-  // ✅ use ENV variable
-  const API_KEY = process.env.REACT_APP_GNEWS_API_KEY;
-
   const capitalizeFirstletter = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
@@ -24,24 +21,21 @@ const News = (props) => {
 
       setLoading(true);
 
-      let url = `https://gnews.io/api/v4/top-headlines?category=${props.category.toLowerCase()}&lang=en&country=${props.country}&max=${props.pageSize}&page=1&apikey=${API_KEY}`;
+      // ✅ CALL YOUR BACKEND (NOT GNEWS DIRECTLY)
+      let url = `/api/news?category=${props.category}&page=1`;
 
       let data = await fetch(url);
       let parsedData = await data.json();
 
-      console.log(parsedData); // 🔍 debug
-
-      // ✅ handle API errors
-      if (parsedData.errors) {
-        console.error("API Error:", parsedData.errors);
+      if (!parsedData.articles) {
         setAritcles([]);
         setTotalResults(0);
         setLoading(false);
         return;
       }
 
-      setAritcles(parsedData.articles || []);
-      setTotalResults(parsedData.totalArticles || 0);
+      setAritcles(parsedData.articles);
+      setTotalResults(parsedData.totalArticles || parsedData.articles.length);
       setPage(1);
 
       setLoading(false);
@@ -61,15 +55,16 @@ const News = (props) => {
     try {
       const nextPage = page + 1;
 
-      let url = `https://gnews.io/api/v4/top-headlines?category=${props.category.toLowerCase()}&lang=en&country=${props.country}&max=${props.pageSize}&page=${nextPage}&apikey=${API_KEY}`;
+      // ✅ BACKEND CALL
+      let url = `/api/news?category=${props.category}&page=${nextPage}`;
 
       let data = await fetch(url);
       let parsedData = await data.json();
 
-      if (parsedData.errors) return;
+      if (!parsedData.articles) return;
 
-      setAritcles(prev => prev.concat(parsedData.articles || []));
-      setTotalResults(parsedData.totalArticles || 0);
+      setAritcles(prev => prev.concat(parsedData.articles));
+      setTotalResults(parsedData.totalArticles || parsedData.articles.length);
       setPage(nextPage);
 
     } catch (error) {
@@ -85,7 +80,6 @@ const News = (props) => {
 
       {loading && <Spinner />}
 
-      {/* ✅ show message if no news */}
       {!loading && articles.length === 0 && (
         <h3 className="text-center">No news available 😔</h3>
       )}
