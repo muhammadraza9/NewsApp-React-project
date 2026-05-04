@@ -11,7 +11,8 @@ const News = (props) => {
   const [page, setPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
 
-  const API_KEY = "1f260844fc85760ac53657606b7748af";
+  // ✅ use ENV variable
+  const API_KEY = process.env.REACT_APP_GNEWS_API_KEY;
 
   const capitalizeFirstletter = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -19,7 +20,7 @@ const News = (props) => {
 
   const updateNews = async () => {
     try {
-      if (loading) return; // ✅ prevent duplicate calls
+      if (loading) return;
 
       setLoading(true);
 
@@ -28,6 +29,17 @@ const News = (props) => {
       let data = await fetch(url);
       let parsedData = await data.json();
 
+      console.log(parsedData); // 🔍 debug
+
+      // ✅ handle API errors
+      if (parsedData.errors) {
+        console.error("API Error:", parsedData.errors);
+        setAritcles([]);
+        setTotalResults(0);
+        setLoading(false);
+        return;
+      }
+
       setAritcles(parsedData.articles || []);
       setTotalResults(parsedData.totalArticles || 0);
       setPage(1);
@@ -35,12 +47,11 @@ const News = (props) => {
       setLoading(false);
 
     } catch (error) {
-      console.error(error);
+      console.error("Fetch Error:", error);
       setLoading(false);
     }
   };
 
-  // ✅ FIXED useEffect
   useEffect(() => {
     updateNews();
     // eslint-disable-next-line
@@ -54,6 +65,8 @@ const News = (props) => {
 
       let data = await fetch(url);
       let parsedData = await data.json();
+
+      if (parsedData.errors) return;
 
       setAritcles(prev => prev.concat(parsedData.articles || []));
       setTotalResults(parsedData.totalArticles || 0);
@@ -72,6 +85,11 @@ const News = (props) => {
 
       {loading && <Spinner />}
 
+      {/* ✅ show message if no news */}
+      {!loading && articles.length === 0 && (
+        <h3 className="text-center">No news available 😔</h3>
+      )}
+
       <InfiniteScroll
         dataLength={articles.length}
         next={fetchMoreData}
@@ -81,7 +99,7 @@ const News = (props) => {
         <div className='container'>
           <div className="row">
 
-            {articles.length > 0 && articles.map((element) => {
+            {articles.map((element) => {
               return (
                 <div className="col-md-4" key={element.url}>
                   <NewItem
