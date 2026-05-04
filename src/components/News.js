@@ -8,8 +8,9 @@ const News = (props) => {
 
   const [articles, setAritcles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
+
+  // ✅ ENV variable (must exist in .env)
+  const API_KEY = process.env.REACT_APP_GNEWS_API_KEY;
 
   const capitalizeFirstletter = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -17,26 +18,25 @@ const News = (props) => {
 
   const updateNews = async () => {
     try {
-      if (loading) return;
-
       setLoading(true);
 
-      // ✅ CALL YOUR BACKEND (NOT GNEWS DIRECTLY)
-      let url = `/api/news?category=${props.category}&page=1`;
+      console.log("API KEY:", API_KEY); // debug
 
-      let data = await fetch(url);
-      let parsedData = await data.json();
+      // ✅ SIMPLE URL (no pagination)
+      let url = `https://gnews.io/api/v4/top-headlines?category=${props.category.toLowerCase()}&lang=en&country=${props.country}&max=${props.pageSize}&apikey=${API_KEY}`;
 
-      if (!parsedData.articles) {
+      let response = await fetch(url);
+      let parsedData = await response.json();
+
+      console.log(parsedData); // debug
+
+      // ✅ handle API error
+      if (parsedData.errors) {
+        console.error("API Error:", parsedData.errors);
         setAritcles([]);
-        setTotalResults(0);
-        setLoading(false);
-        return;
+      } else {
+        setAritcles(parsedData.articles || []);
       }
-
-      setAritcles(parsedData.articles);
-      setTotalResults(parsedData.totalArticles || parsedData.articles.length);
-      setPage(1);
 
       setLoading(false);
 
@@ -51,26 +51,8 @@ const News = (props) => {
     // eslint-disable-next-line
   }, [props.category]);
 
-  const fetchMoreData = async () => {
-    try {
-      const nextPage = page + 1;
-
-      // ✅ BACKEND CALL
-      let url = `/api/news?category=${props.category}&page=${nextPage}`;
-
-      let data = await fetch(url);
-      let parsedData = await data.json();
-
-      if (!parsedData.articles) return;
-
-      setAritcles(prev => prev.concat(parsedData.articles));
-      setTotalResults(parsedData.totalArticles || parsedData.articles.length);
-      setPage(nextPage);
-
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  // ❌ disable infinite scroll (causes issues with free API)
+  const fetchMoreData = () => {};
 
   return (
     <>
@@ -80,6 +62,7 @@ const News = (props) => {
 
       {loading && <Spinner />}
 
+      {/* ✅ no news message */}
       {!loading && articles.length === 0 && (
         <h3 className="text-center">No news available 😔</h3>
       )}
@@ -87,7 +70,7 @@ const News = (props) => {
       <InfiniteScroll
         dataLength={articles.length}
         next={fetchMoreData}
-        hasMore={articles.length < totalResults}
+        hasMore={false}   // ❌ disabled
         loader={<Spinner />}
       >
         <div className='container'>
