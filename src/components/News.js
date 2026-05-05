@@ -6,15 +6,15 @@ import Spinner from './Spinner';
 
 const News = (props) => {
 
-  const [articles, setAritcles] = useState([]);
+  const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const API_KEY = process.env.REACT_APP_GNEWS_API_KEY;
+  const API_KEY = "1f260844fc85760ac53657606b7748af";
 
   const capitalizeFirstletter = (str) => {
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    return str.charAt(0).toUpperCase() + str.slice(1);
   };
 
   // ✅ FIRST LOAD
@@ -25,51 +25,75 @@ const News = (props) => {
       let url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=1&apikey=${API_KEY}`;
 
       let response = await fetch(url);
+
+      // ✅ HANDLE 429 ERROR
+      if (response.status === 429) {
+        console.log("API limit reached");
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+
       let data = await response.json();
 
-      if (data.articles && data.articles.length > 0) {
-        setAritcles(data.articles);
-        setPage(1);
-        setHasMore(true); // reset
-      } else {
-        setAritcles([]);
+      if (!data.articles || data.articles.length === 0) {
+        setArticles([]);
         setHasMore(false);
+      } else {
+        setArticles(data.articles);
+        setPage(1);
+        setHasMore(true);
       }
 
       setLoading(false);
 
     } catch (error) {
-      console.error(error);
+      console.error("Fetch Error:", error);
       setLoading(false);
       setHasMore(false);
     }
   };
 
+  // ✅ RUN ONLY ON CATEGORY CHANGE
   useEffect(() => {
     updateNews();
     // eslint-disable-next-line
   }, [props.category]);
 
-  // ✅ LOAD MORE ON SCROLL
+  // ✅ LOAD MORE (SCROLL)
   const fetchMoreData = async () => {
     try {
       if (!hasMore) return;
 
       const nextPage = page + 1;
 
+      // ✅ LIMIT REQUESTS (avoid 429)
+      if (nextPage > 5) {
+        setHasMore(false);
+        return;
+      }
+
       let url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=${nextPage}&apikey=${API_KEY}`;
 
       let response = await fetch(url);
+
+      // ✅ HANDLE 429 AGAIN
+      if (response.status === 429) {
+        console.log("API limit reached");
+        setHasMore(false);
+        return;
+      }
+
       let data = await response.json();
 
-      // ❌ No more news → stop forever
+      // ❌ no more news
       if (!data.articles || data.articles.length === 0) {
         setHasMore(false);
         return;
       }
 
-      // ✅ Append news
-      setAritcles(prev => prev.concat(data.articles));
+      // ✅ append news
+      setArticles(prev => prev.concat(data.articles));
       setPage(nextPage);
 
     } catch (error) {
@@ -119,7 +143,7 @@ const News = (props) => {
         </div>
       </InfiniteScroll>
 
-      {/* ✅ Show once when finished */}
+      {/* ✅ SHOW ONLY ONCE WHEN END */}
       {!hasMore && articles.length > 0 && (
         <h4 className="text-center my-4">
           No more news for today ✅

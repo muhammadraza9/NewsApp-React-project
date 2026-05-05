@@ -16,11 +16,11 @@ const NewItem = (props) => {
         </span>
 
         {/* ✅ FIX: fallback image */}
-        <img
-          src={imageUrl || "https://via.placeholder.com/300x200?text=No+Image"}
-          className="card-img-top"
-          alt="news"
-        />
+        <img 
+  src={imageUrl || "https://via.placeholder.com/300"} 
+  alt="news"
+  onError={(e) => e.target.src = "https://via.placeholder.com/300"} 
+/>
 
         <div className="card-body">
 

@@ -3,6 +3,10 @@ export default async function handler(req, res) {
 
   const API_KEY = process.env.GNEWS_API_KEY;
 
+  if (!API_KEY) {
+    return res.status(500).json({ error: "API KEY missing" });
+  }
+
   try {
     const url = `https://gnews.io/api/v4/top-headlines?category=${category}&lang=en&country=us&max=5&page=${page}&apikey=${API_KEY}`;
 
