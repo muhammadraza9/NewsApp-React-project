@@ -11,95 +11,85 @@ const News = (props) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const API_KEY = "1f260844fc85760ac53657606b7748af";
+  // ✅ USE ENV VARIABLE (IMPORTANT FOR DEPLOYMENT)
+  const API_KEY = process.env.REACT_APP_GNEWS_API_KEY;
 
   const capitalizeFirstletter = (str) => {
-    return str.charAt(0).toUpperCase() + str.slice(1);
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
   };
 
-  // ✅ FIRST LOAD
-  const updateNews = async () => {
+  // ✅ FETCH NEWS FUNCTION
+  const fetchNews = async (pageNumber) => {
     try {
-      setLoading(true);
-
-      let url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=1&apikey=${API_KEY}`;
+      let url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=${pageNumber}&apikey=${API_KEY}`;
 
       let response = await fetch(url);
 
-      // ✅ HANDLE 429 ERROR
+      // ✅ HANDLE RATE LIMIT
       if (response.status === 429) {
         console.log("API limit reached");
         setHasMore(false);
-        setLoading(false);
-        return;
+        return { articles: [] };
       }
 
       let data = await response.json();
 
-      if (!data.articles || data.articles.length === 0) {
-        setArticles([]);
-        setHasMore(false);
-      } else {
-        setArticles(data.articles);
-        setPage(1);
-        setHasMore(true);
-      }
-
-      setLoading(false);
+      return {
+        articles: data.articles || []
+      };
 
     } catch (error) {
       console.error("Fetch Error:", error);
-      setLoading(false);
-      setHasMore(false);
+      return { articles: [] };
     }
   };
 
-  // ✅ RUN ONLY ON CATEGORY CHANGE
+  // ✅ INITIAL LOAD
+  const updateNews = async () => {
+    setLoading(true);
+
+    const data = await fetchNews(1);
+
+    if (data.articles.length === 0) {
+      setArticles([]);
+      setHasMore(false);
+    } else {
+      setArticles(data.articles);
+      setPage(1);
+      setHasMore(true);
+    }
+
+    setLoading(false);
+  };
+
+  // ✅ RUN ON CATEGORY CHANGE
   useEffect(() => {
     updateNews();
     // eslint-disable-next-line
   }, [props.category]);
 
-  // ✅ LOAD MORE (SCROLL)
+  // ✅ LOAD MORE DATA (INFINITE SCROLL)
   const fetchMoreData = async () => {
-    try {
-      if (!hasMore) return;
 
-      const nextPage = page + 1;
+    if (!hasMore) return;
 
-      // ✅ LIMIT REQUESTS (avoid 429)
-      if (nextPage > 5) {
-        setHasMore(false);
-        return;
-      }
+    const nextPage = page + 1;
 
-      let url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=${nextPage}&apikey=${API_KEY}`;
-
-      let response = await fetch(url);
-
-      // ✅ HANDLE 429 AGAIN
-      if (response.status === 429) {
-        console.log("API limit reached");
-        setHasMore(false);
-        return;
-      }
-
-      let data = await response.json();
-
-      // ❌ no more news
-      if (!data.articles || data.articles.length === 0) {
-        setHasMore(false);
-        return;
-      }
-
-      // ✅ append news
-      setArticles(prev => prev.concat(data.articles));
-      setPage(nextPage);
-
-    } catch (error) {
-      console.error(error);
+    // ✅ LIMIT REQUESTS (avoid API ban)
+    if (nextPage > 5) {
       setHasMore(false);
+      return;
     }
+
+    const data = await fetchNews(nextPage);
+
+    if (data.articles.length === 0) {
+      setHasMore(false);
+      return;
+    }
+
+    setArticles(prev => prev.concat(data.articles));
+    setPage(nextPage);
   };
 
   return (
@@ -111,7 +101,7 @@ const News = (props) => {
       {loading && <Spinner />}
 
       {!loading && articles.length === 0 && (
-        <h3 className="text-center">No news available 😔</h3>
+        <h3 className="text-center">No news available</h3>
       )}
 
       <InfiniteScroll
@@ -123,17 +113,17 @@ const News = (props) => {
         <div className='container'>
           <div className="row">
 
-            {articles.map((element) => {
+            {articles.map((element, index) => {
               return (
-                <div className="col-md-4" key={element.url}>
+                <div className="col-md-4" key={element.url || index}>
                   <NewItem
-                    title={element.title || ""}
-                    description={element.description || ""}
-                    imageUrl={element.image}
+                    title={element.title || "No Title"}
+                    description={element.description || "No Description"}
+                    imageUrl={element.image || "https://via.placeholder.com/300"}
                     newsurl={element.url}
-                    author={element.source?.name}
+                    author={element.source?.name || "Unknown"}
                     date={element.publishedAt}
-                    source={element.source?.name}
+                    source={element.source?.name || "Unknown"}
                   />
                 </div>
               )
@@ -143,10 +133,9 @@ const News = (props) => {
         </div>
       </InfiniteScroll>
 
-      {/* ✅ SHOW ONLY ONCE WHEN END */}
       {!hasMore && articles.length > 0 && (
         <h4 className="text-center my-4">
-          No more news for today ✅
+          No more news for today
         </h4>
       )}
     </>
