@@ -15,27 +15,35 @@ const News = (props) => {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
   };
 
+  // ✅ Single fetchNews with debug logs
   const fetchNews = useCallback(async (pageNumber) => {
     try {
-      const token = process.env.REACT_APP_GNEWS_TOKEN;
-      const url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=${pageNumber}&token=${token}`;
+      const url = `/api/news?category=${props.category}&page=${pageNumber}`;
+      console.log("Fetching:", url);
 
       const response = await fetch(url);
+      console.log("Status:", response.status);
+
+      const raw = await response.text();
+      console.log("Raw response:", raw);
 
       if (response.status === 429) {
         console.warn("Rate limit reached");
         setHasMore(false);
-        return { articles: [] };
+        return { articles: [], total: 0 };
       }
 
-      const data = await response.json();
-      return { articles: data.articles || [] };
+      const data = JSON.parse(raw);
+      return {
+        articles: data.articles || [],
+        total: data.total || 0
+      };
 
     } catch (error) {
       console.error("Fetch Error:", error);
-      return { articles: [] };
+      return { articles: [], total: 0 };
     }
-  }, [props.category, props.pageSize]);
+  }, [props.category]);
 
   const updateNews = useCallback(async () => {
     setLoading(true);
@@ -53,8 +61,7 @@ const News = (props) => {
     updateNews();
   }, [updateNews]);
 
-  // Fixed: no longer uses setPage inside useCallback — plain async function is correct here
-  const fetchMoreData = async () => {
+  const fetchMoreData = useCallback(async () => {
     if (!hasMore || isFetchingMore.current) return;
     isFetchingMore.current = true;
 
@@ -76,7 +83,7 @@ const News = (props) => {
     }
 
     isFetchingMore.current = false;
-  };
+  }, [page, hasMore, fetchNews]);
 
   return (
     <>
