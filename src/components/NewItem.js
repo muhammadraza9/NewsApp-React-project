@@ -6,7 +6,7 @@ const NewItem = (props) => {
 
   return (
     <div>
-      <div className="card">
+      <div className="card my-3">
 
         <span
           className="position-absolute top-0 translate-middle badge rounded-pill bg-success"
@@ -15,31 +15,26 @@ const NewItem = (props) => {
           {source || "Unknown"}
         </span>
 
-        {/* ✅ FIX: fallback image */}
-        <img 
-  src={imageUrl || "https://via.placeholder.com/300"} 
-  alt="news"
-  onError={(e) => e.target.src = "https://via.placeholder.com/300"} 
-/>
+        <img
+          src={imageUrl || "https://via.placeholder.com/300"}
+          className="card-img-top"
+          alt="news"
+          onError={(e) => { e.target.src = "https://via.placeholder.com/300"; }}
+        />
 
         <div className="card-body">
-
           <h5 className="card-title">{title || "No Title"}</h5>
-
           <p className="card-text">{description || "No description available"}</p>
-
-          {/* ✅ FIX: safe date */}
           <p className="card-text">
             <small className="text-body-secondary">
               By {!author ? "Unknown" : author} on {date ? new Date(date).toGMTString() : "Unknown date"}
             </small>
           </p>
-
           <a href={newsurl} target="_blank" rel="noreferrer" className="btn btn-dark">
             Read more
           </a>
-
         </div>
+
       </div>
     </div>
   )
