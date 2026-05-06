@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 
 const Navbar = () => {
+    const [isOpen, setIsOpen] = useState(false);
 
     return (
       <nav className="navbar fixed-top navbar-expand-lg navbar-dark bg-dark" >
@@ -10,26 +11,25 @@ const Navbar = () => {
           <button
             className="navbar-toggler"
             type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarSupportedContent"
+            onClick={() => setIsOpen(!isOpen)}
             aria-controls="navbarSupportedContent"
-            aria-expanded="false"
+            aria-expanded={isOpen}
             aria-label="Toggle navigation"
           >
             <span className="navbar-toggler-icon"></span>
           </button>
 
-          <div className="" id="navbarSupportedContent">
-            <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+          <div className={`collapse navbar-collapse ${isOpen ? "show" : ""}`} id="navbarSupportedContent">
+            <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
               {/* <li className="nav-item"><Link className="nav-link" to="/">Home</Link></li> */}
               {/* <li className="nav-item" ><Link className="nav-link" to="/about">About</Link></li> */}
-              <li className="nav-item"><Link className="nav-link" to="/technology">Technology</Link></li>
-              <li className="nav-item"><Link className="nav-link" to="/business">Business</Link></li>
-              <li className="nav-item"><Link className="nav-link" to="/entertainment">Entertainment</Link></li>
-              <li className="nav-item"><Link className="nav-link" to="/general">General</Link></li>
-              <li className="nav-item"><Link className="nav-link" to="/health">Health</Link></li>
-              <li className="nav-item"><Link className="nav-link" to="/science">Science</Link></li>
-              <li className="nav-item"><Link className="nav-link" to="/sports">Sports</Link></li>
+              <li className="nav-item"><Link className="nav-link" to="/technology" onClick={() => setIsOpen(false)}>Technology</Link></li>
+              <li className="nav-item"><Link className="nav-link" to="/business" onClick={() => setIsOpen(false)}>Business</Link></li>
+              <li className="nav-item"><Link className="nav-link" to="/entertainment" onClick={() => setIsOpen(false)}>Entertainment</Link></li>
+              <li className="nav-item"><Link className="nav-link" to="/general" onClick={() => setIsOpen(false)}>General</Link></li>
+              <li className="nav-item"><Link className="nav-link" to="/health" onClick={() => setIsOpen(false)}>Health</Link></li>
+              <li className="nav-item"><Link className="nav-link" to="/science" onClick={() => setIsOpen(false)}>Science</Link></li>
+              <li className="nav-item"><Link className="nav-link" to="/sports" onClick={() => setIsOpen(false)}>Sports</Link></li>
               
             </ul>
           </div>
@@ -40,4 +40,3 @@ const Navbar = () => {
 }
 
 export default Navbar;
-
