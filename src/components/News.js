@@ -1,28 +1,29 @@
-import React, { useEffect, useState } from 'react'
-import NewItem from './NewItem'
-import PropTypes from 'prop-types'
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import NewItem from './NewItem';
+import PropTypes from 'prop-types';
 import InfiniteScroll from "react-infinite-scroll-component";
 import Spinner from './Spinner';
 
 const News = (props) => {
-
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const isFetchingMore = useRef(false);
 
   const capitalizeFirstLetter = (str) => {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
   };
 
-  const fetchNews = async (pageNumber) => {
+  const fetchNews = useCallback(async (pageNumber) => {
     try {
-      const url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=${pageNumber}&token=1f260844fc85760ac53657606b7748af`;
+      const token = process.env.REACT_APP_GNEWS_TOKEN;
+      const url = `https://gnews.io/api/v4/top-headlines?category=${props.category}&lang=en&country=us&max=${props.pageSize}&page=${pageNumber}&token=${token}`;
 
       const response = await fetch(url);
 
       if (response.status === 429) {
-        console.log("Rate limit reached");
+        console.warn("Rate limit reached");
         setHasMore(false);
         return { articles: [] };
       }
@@ -34,46 +35,52 @@ const News = (props) => {
       console.error("Fetch Error:", error);
       return { articles: [] };
     }
-  };
+  }, [props.category, props.pageSize]);
 
-  const updateNews = async () => {
+  const updateNews = useCallback(async () => {
     setLoading(true);
+    setPage(1);
+    setHasMore(true);
     const data = await fetchNews(1);
     if (data.articles.length === 0) {
-      setArticles([]);
       setHasMore(false);
-    } else {
-      setArticles(data.articles);
-      setPage(1);
-      setHasMore(true);
     }
+    setArticles(data.articles);
     setLoading(false);
-  };
+  }, [fetchNews]);
 
   useEffect(() => {
     updateNews();
-    // eslint-disable-next-line
-  }, [props.category]);
+  }, [updateNews]);
 
+  // Fixed: no longer uses setPage inside useCallback — plain async function is correct here
   const fetchMoreData = async () => {
-    if (!hasMore) return;
+    if (!hasMore || isFetchingMore.current) return;
+    isFetchingMore.current = true;
+
     const nextPage = page + 1;
+
     if (nextPage > 5) {
       setHasMore(false);
+      isFetchingMore.current = false;
       return;
     }
+
     const data = await fetchNews(nextPage);
+
     if (data.articles.length === 0) {
       setHasMore(false);
-      return;
+    } else {
+      setArticles(prev => [...prev, ...data.articles]);
+      setPage(nextPage);
     }
-    setArticles(prev => [...prev, ...data.articles]);
-    setPage(nextPage);
+
+    isFetchingMore.current = false;
   };
 
   return (
     <>
-      <h1 className='text-center' style={{ margin: '70px' }}>
+      <h1 className='text-center' style={{ margin: '20px 0' }}>
         NewsMonkey - Top {capitalizeFirstLetter(props.category)} Headlines
       </h1>
 
@@ -89,14 +96,14 @@ const News = (props) => {
         hasMore={hasMore}
         loader={<Spinner />}
       >
-        <div className='container'>
-          <div className="row">
+        <div className='container pt-2'>
+          <div className="row align-items-stretch g-4">
             {articles.map((element, index) => (
-              <div className="col-md-4" key={element.url || index}>
+              <div className="col-md-4 d-flex" key={element.url || index}>
                 <NewItem
                   title={element.title || "No Title"}
                   description={element.description || "No Description"}
-                  imageUrl={element.image || "https://via.placeholder.com/300"}
+                  imageUrl={element.image || "https://placehold.co/600x400"}
                   newsurl={element.url}
                   author={element.source?.name || "Unknown"}
                   date={element.publishedAt}

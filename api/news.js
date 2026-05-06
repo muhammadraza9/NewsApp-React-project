@@ -1,20 +1,13 @@
 export default async function handler(req, res) {
   try {
-    // CORS headers (safe for frontend calls)
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-    if (req.method === "OPTIONS") {
-      return res.status(200).end();
-    }
-
     const { category = "general", page = 1 } = req.query;
 
     const API_KEY = process.env.GNEWS_API_KEY;
 
     if (!API_KEY) {
-      return res.status(500).json({ error: "Missing API key" });
+      return res.status(500).json({
+        error: "Missing API key"
+      });
     }
 
     const url = `https://gnews.io/api/v4/top-headlines?category=${category}&lang=en&country=us&max=10&page=${page}&apikey=${API_KEY}`;
@@ -25,17 +18,19 @@ export default async function handler(req, res) {
     if (!response.ok) {
       return res.status(400).json({
         error: "GNews failed",
-        details: data,
+        details: data
       });
     }
 
+    // ✅ ALWAYS return correct format
     return res.status(200).json({
-      articles: data.articles || [],
+      articles: data.articles || []
     });
+
   } catch (error) {
     return res.status(500).json({
       error: "Server error",
-      details: error.message,
+      details: error.message
     });
   }
 }

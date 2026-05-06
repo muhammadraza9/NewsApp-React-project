@@ -1,43 +1,55 @@
-import React from 'react'
+import React from 'react';
 
-const NewItem = (props) => {
+const FALLBACK_IMAGE = "https://placehold.co/600x400";
 
-  let { title, description, imageUrl, newsurl, author, date, source } = props;
+const NewItem = ({ title, description, imageUrl, newsurl, author, date, source }) => {
+  const formattedDate = date
+    ? new Date(date).toUTCString()
+    : "Unknown date";
 
   return (
-    <div>
-      <div className="card my-3">
+    <div className="card h-100 position-relative">
 
-        <span
-          className="position-absolute top-0 translate-middle badge rounded-pill bg-success"
-          style={{ left: '87%', zIndex: '1' }}
-        >
-          {source || "Unknown"}
-        </span>
+      <span
+        className="position-absolute top-0 translate-middle badge rounded-pill bg-success"
+        style={{ left: '87%', zIndex: 1 }}
+      >
+        {source || "Unknown"}
+      </span>
 
+      {/* Fixed height image wrapper */}
+      <div style={{ height: '200px', overflow: 'hidden' }}>
         <img
-          src={imageUrl || "https://via.placeholder.com/300"}
-          className="card-img-top"
-          alt="news"
-          onError={(e) => { e.target.src = "https://via.placeholder.com/300"; }}
+          src={imageUrl || FALLBACK_IMAGE}
+          alt={title || "news"}
+          onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
+      </div>
 
-        <div className="card-body">
-          <h5 className="card-title">{title || "No Title"}</h5>
-          <p className="card-text">{description || "No description available"}</p>
-          <p className="card-text">
-            <small className="text-body-secondary">
-              By {!author ? "Unknown" : author} on {date ? new Date(date).toGMTString() : "Unknown date"}
-            </small>
-          </p>
-          <a href={newsurl} target="_blank" rel="noreferrer" className="btn btn-dark">
+      {/* d-flex flex-column pushes button to bottom */}
+      <div className="card-body d-flex flex-column">
+        <h5 className="card-title">{title || "No Title"}</h5>
+        <p className="card-text flex-grow-1">{description || "No description available"}</p>
+        <p className="card-text">
+          <small className="text-body-secondary">
+            By {author || "Unknown"} on {formattedDate}
+          </small>
+        </p>
+
+        {newsurl ? (
+          <a href={newsurl} target="_blank" rel="noreferrer" className="btn btn-dark mt-auto">
             Read more
           </a>
-        </div>
-
+        ) : (
+          <button className="btn btn-dark mt-auto" disabled>
+            Read more
+          </button>
+        )}
       </div>
-    </div>
-  )
-}
 
-export default NewItem
+    </div>
+  );
+};
+
+export default NewItem;
